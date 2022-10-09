@@ -1,0 +1,30 @@
+# syntax=docker/dockerfile:1
+
+##
+## Build
+##
+FROM golang:1.16-alpine AS build
+
+WORKDIR /app
+
+COPY . ./
+RUN go env -w GOPROXY=https://goproxy.cn,direct \
+    && go mod download
+
+RUN CGO_ENABLED=0 GOOS=linux go build -o /picture-oss-proxy
+
+##
+## Deploy
+##
+FROM scratch
+
+WORKDIR /app
+
+COPY --from=build /picture-oss-proxy ../picture-oss-proxy
+# 主要是把配置文件啥的拷贝过来
+COPY --from=build /app ./
+
+
+EXPOSE 3000
+
+ENTRYPOINT ["/picture-oss-proxy"]
